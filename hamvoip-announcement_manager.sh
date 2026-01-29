@@ -77,20 +77,27 @@ cp -v "$TEMP_CLONE"/*.{php,inc} "$TARGET_DIR"/ 2>/dev/null || warn "No .php/.inc
 rm -rf "$TEMP_CLONE"
 
 # ────────────────────────────────────────────────
+# ────────────────────────────────────────────────
 echo_step "5. Creating /mp3 directory + permissions"
 mkdir -p "$MP3_DIR"
-echo "Granting access to user/group: $WEB_USER:$WEB_GROUP"
+echo "Web server runs as $WEB_USER:$WEB_GROUP"
 
-if id -nG "$SUDO_USER" 2>/dev/null | grep -qw "$WEB_GROUP"; then
-    echo "$SUDO_USER already in $WEB_GROUP group"
+# Determine the user who invoked sudo (for group addition)
+INVOKER="${SUDO_USER:-$(whoami)}"
+if [[ "$INVOKER" = "root" ]]; then
+    warn "Script run directly as root – skipping adding user to $WEB_GROUP"
 else
-    echo "Adding $SUDO_USER to $WEB_GROUP (for easier local file management)"
-    usermod -aG "$WEB_GROUP" "$SUDO_USER" || warn "Could not add $SUDO_USER to group"
+    if id -nG "$INVOKER" 2>/dev/null | grep -qw "$WEB_GROUP"; then
+        echo "$INVOKER is already in $WEB_GROUP group"
+    else
+        echo "Adding $INVOKER to $WEB_GROUP group (for easier file access from your account)"
+        usermod -aG "$WEB_GROUP" "$INVOKER" || warn "Failed to add $INVOKER to group (check manually)"
+    fi
 fi
 
 chown -R "$WEB_USER:$WEB_GROUP" "$MP3_DIR"
 chmod -R 2775 "$MP3_DIR"
-echo "MP3 directory ready (setgid bit set)."
+echo "MP3 directory ready (setgid enabled)."
 
 # ────────────────────────────────────────────────
 echo_step "6. Ownership & permissions on custom files"
@@ -231,3 +238,4 @@ echo " → Test file conversion & playback manually if needed"
 echo " → If Piper test failed, check /mp3 permissions and model path"
 echo ""
 echo "73 de N5AD (adapted for Arch/HamVoIP)"
+

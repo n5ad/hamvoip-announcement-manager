@@ -184,12 +184,21 @@ EOF
 fi
 
 # ────────────────────────────────────────────────
-echo_step "11. Installing Piper TTS 1.2.0 (ARM64 binary)"
+echo_step "11. Installing Piper TTS 1.2.0 (auto-detect arch)"
 if [[ -f "/opt/piper/bin/piper" ]]; then
-    echo "Piper already present — skipping"
+    echo "Piper already present — skipping download"
 else
-    echo "Downloading piper_arm64.tar.gz ..."
-    wget https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_arm64.tar.gz -O /tmp/piper.tar.gz
+    ARCH=$(uname -m)
+    if [[ "$ARCH" == "x86_64" ]]; then
+        PIPER_TAR="piper_amd64.tar.gz"
+    elif [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
+        PIPER_TAR="piper_arm64.tar.gz"
+    else
+        error "Unsupported CPU architecture: $ARCH — can't install Piper binary"
+    fi
+
+    echo "Detected architecture: $ARCH → downloading $PIPER_TAR"
+    wget "https://github.com/rhasspy/piper/releases/download/v1.2.0/$PIPER_TAR" -O /tmp/piper.tar.gz || error "Download failed"
     mkdir -p /opt/piper/bin
     tar -xzf /tmp/piper.tar.gz -C /opt/piper/bin
     chmod +x /opt/piper/bin/piper
@@ -200,7 +209,7 @@ else
     chown "$WEB_USER:$WEB_GROUP" *.onnx *.onnx.json
     chmod 644 *.onnx *.onnx.json
     rm -f /tmp/piper.tar.gz
-    echo "Piper installed."
+    echo "Piper installed for $ARCH."
 fi
 
 # ────────────────────────────────────────────────
@@ -239,6 +248,7 @@ echo " → Test file conversion & playback manually if needed"
 echo " → If Piper test failed, check /mp3 permissions and model path"
 echo ""
 echo "73 de N5AD (adapted for Arch/HamVoIP)"
+
 
 
 

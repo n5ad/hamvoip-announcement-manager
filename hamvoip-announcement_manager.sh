@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# setup-supermon-announcements-arch.sh
+# setup-hamvoip-announcement-manager.sh
 # Adapted for HamVoIP running on Arch Linux
 # - Uses pacman instead of apt
 # - Uses /srv/http/supermon (typical HamVoIP web root)
 # - Apache user/group = http:http
 # - Safe & idempotent
 #
-# Run as root: sudo bash setup-supermon-announcements-arch.sh
+# Run as root: sudo bash hamvoip-announcement-manager.sh
 # Author: N5AD (original) — adapted January 2026
 set -euo pipefail
 
@@ -239,5 +239,6 @@ echo " → Test file conversion & playback manually if needed"
 echo " → If Piper test failed, check /mp3 permissions and model path"
 echo ""
 echo "73 de N5AD (adapted for Arch/HamVoIP)"
+
 
 

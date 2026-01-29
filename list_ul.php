@@ -4,7 +4,7 @@
 
 // CREATED BY N5AD
 
-$SOUNDS_DIR = '/usr/local/share/asterisk/sounds/announcements';
+$SOUNDS_DIR = '/var/lib/asterisk/sounds/announcements';
 
 $files = glob("$SOUNDS_DIR/*.ul");
 

@@ -185,33 +185,52 @@ fi
 
 # ────────────────────────────────────────────────
 echo_step "11. Installing Piper TTS 1.2.0 (auto-detect arch)"
+# ────────────────────────────────────────────────
+echo_step "11. Installing Piper TTS 1.2.0 (architecture-aware)"
 if [[ -f "/opt/piper/bin/piper" ]]; then
-    echo "Piper already present — skipping download"
+    echo "Piper already present — skipping download/install"
 else
     ARCH=$(uname -m)
-    if [[ "$ARCH" == "x86_64" ]]; then
-        PIPER_TAR="piper_amd64.tar.gz"
-    elif [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
-        PIPER_TAR="piper_arm64.tar.gz"
-    else
-        error "Unsupported CPU architecture: $ARCH — can't install Piper binary"
-    fi
+    echo "Detected architecture: $ARCH"
 
-    echo "Detected architecture: $ARCH → downloading $PIPER_TAR"
-    wget "https://github.com/rhasspy/piper/releases/download/v1.2.0/$PIPER_TAR" -O /tmp/piper.tar.gz || error "Download failed"
+    case "$ARCH" in
+        aarch64|arm64)
+            PIPER_FILE="piper_arm64.tar.gz"
+            ;;
+        armv7l|armv7|armhf)
+            PIPER_FILE="piper_armv7.tar.gz"   # v1.2.0 name; works for armv7l
+            # Alternative newer name if using post-v1.2: "piper_linux_armv7l.tar.gz"
+            ;;
+        x86_64|amd64)
+            PIPER_FILE="piper_amd64.tar.gz"
+            ;;
+        *)
+            error "Unsupported architecture: $ARCH — no Piper binary available. Build from source or check https://github.com/rhasspy/piper/releases"
+            ;;
+    esac
+
+    DOWNLOAD_URL="https://github.com/rhasspy/piper/releases/download/v1.2.0/$PIPER_FILE"
+
+    echo "Downloading $PIPER_FILE for $ARCH ..."
+    wget "$DOWNLOAD_URL" -O /tmp/piper.tar.gz || error "Download failed for $PIPER_FILE — check URL or internet"
+
     mkdir -p /opt/piper/bin
     tar -xzf /tmp/piper.tar.gz -C /opt/piper/bin
     chmod +x /opt/piper/bin/piper
+
     mkdir -p /opt/piper/voices
-    cd /opt/piper/voices
+    cd /opt/piper/voices || error "Failed to cd into /opt/piper/voices"
+
+    # Download the Lessac medium voice (English US) — same for all arches
     wget -4 https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx
     wget -4 https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json
+
     chown "$WEB_USER:$WEB_GROUP" *.onnx *.onnx.json
     chmod 644 *.onnx *.onnx.json
-    rm -f /tmp/piper.tar.gz
-    echo "Piper installed for $ARCH."
-fi
 
+    rm -f /tmp/piper.tar.gz
+    echo "Piper $ARCH binary installed successfully."
+fi
 # ────────────────────────────────────────────────
 echo_step "12. Downloading piper_prompt_tts.sh"
 if [[ -f "/usr/local/bin/piper_prompt_tts.sh" ]]; then
@@ -248,6 +267,7 @@ echo " → Test file conversion & playback manually if needed"
 echo " → If Piper test failed, check /mp3 permissions and model path"
 echo ""
 echo "73 de N5AD (adapted for Arch/HamVoIP)"
+
 
 
 

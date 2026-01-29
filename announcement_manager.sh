@@ -22,7 +22,7 @@ set -euo pipefail
 # ────────────────────────────────────────────────
 # CONFIG
 # ────────────────────────────────────────────────
-REPO_URL="https://github.com/n5ad/announcement-manager.git"
+REPO_URL="https://github.com/n5ad/hamvoip-announcement-manager.git"
 TEMP_CLONE="/tmp/supermon-announcements"
 TARGET_DIR="/srv/html/supermon/custom"
 LINK_PHP="/srv/html/supermon/link.php"
@@ -191,7 +191,7 @@ if [[ -f "$LINK_PHP" ]]; then
     echo "Backup created: $LINK_PHP.bak"
 fi
 sudo wget -O "$LINK_PHP" \
-  https://raw.githubusercontent.com/n5ad/announcement-manager/main/link.php || error "Failed to download new link.php"
+  https://raw.githubusercontent.com/n5ad/hamvoip-announcement-manager/main/link.php || error "Failed to download new link.php"
 chown www-data:www-data "$LINK_PHP"
 chmod 644 "$LINK_PHP"
 echo "New link.php installed successfully."
@@ -243,7 +243,7 @@ if [[ -f "/usr/local/bin/piper_prompt_tts.sh" ]]; then
     echo "/usr/local/bin/piper_prompt_tts.sh already exists – skipping"
 else
     sudo wget -O /usr/local/bin/piper_prompt_tts.sh \
-      https://raw.githubusercontent.com/n5ad/announcement-manager/main/piper_prompt_tts.sh
+      https://raw.githubusercontent.com/n5ad/hamvoip-announcement-manager/main/piper_prompt_tts.sh
     sudo chown root:root /usr/local/bin/piper_prompt_tts.sh
     sudo chmod +x /usr/local/bin/piper_prompt_tts.sh
     echo "piper_prompt_tts.sh downloaded and made executable."
@@ -261,3 +261,4 @@ echo_step "14. Setup complete – verification"
 echo "I hope you get a lot of use from this"
 echo "Log into Supermon → Announcements Manager should now appear at the bottom."
 echo "73 — N5AD"
+

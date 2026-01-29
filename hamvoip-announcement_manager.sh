@@ -128,8 +128,9 @@ NODE="$NODE_NUMBER"
 [ -z "\$1" ] && { echo "Usage: \$0 <audio_file_without_extension>"; exit 1; }
 asterisk -rx "rpt localplay \${NODE} \$1"
 EOF
+   
+    chown root:root "$PLAY_SCRIPT" 
     chmod 755 "$PLAY_SCRIPT"
-    chown asterisk:asterisk "$PLAY_SCRIPT" 2>/dev/null || chown root:root "$PLAY_SCRIPT"
 else
     echo "$PLAY_SCRIPT already exists — skipping creation"
 fi
@@ -238,4 +239,5 @@ echo " → Test file conversion & playback manually if needed"
 echo " → If Piper test failed, check /mp3 permissions and model path"
 echo ""
 echo "73 de N5AD (adapted for Arch/HamVoIP)"
+
 

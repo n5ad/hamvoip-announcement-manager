@@ -1,64 +1,111 @@
 <?php
+/**
+ * update_announcement.php
+ * 
+ * Updates an existing cron job's schedule (minute, hour, dom, month, dow)
+ * while keeping the same command / file to play
+ * 
+ * Called from the "Edit" button in the Cron Manager table
+ * 
+ * CREATED / ADAPTED BY N5AD for Allmon3
+ */
 
-if(!isset($_POST['raw_line'])) { echo "Missing old cron line"; exit; }
-
-
-$old = trim($_POST['raw_line']);
-
-$min   = $_POST['min'];
-
-$hour  = $_POST['hour'];
-
-$dom   = $_POST['dom'];
-
-$month = $_POST['month'];
-
-$dow   = $_POST['dow'];
-
-
-// Build new cron line, keep the UL file path from old line
-
-if(preg_match('/playaudio\.sh\s+.*\/var\/lib\/share\/sounds\/announcements\/(\S+)/', $old, $matches)){
-
-    $file = $matches[1];
-
-    $new = "$min $hour $dom $month $dow /etc/asterisk/local/playaudio.sh /var/lib/asterisk/sounds/announcementes/$file";
-
-} else {
-
-    echo "Failed to parse old cron line"; exit;
-
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo "Method not allowed.";
+    exit;
 }
 
+// ────────────────────────────────────────────────
+// Required fields
+// ────────────────────────────────────────────────
+if (!isset($_POST['raw_line']) || trim($_POST['raw_line']) === '') {
+    echo "Error: Missing original cron line";
+    exit;
+}
 
-// Replace old with new in crontab
+$old_line = trim($_POST['raw_line']);
 
-$tempfile = tempnam(sys_get_temp_dir(), 'cron');
+// New schedule values
+$min   = trim($_POST['min']   ?? '');
+$hour  = trim($_POST['hour']  ?? '');
+$dom   = trim($_POST['dom']   ?? '');
+$month = trim($_POST['month'] ?? '');
+$dow   = trim($_POST['dow']   ?? '');
 
-exec('sudo crontab -l', $crons);
+if ($min === '' || $hour === '' || $dom === '' || $month === '' || $dow === '') {
+    echo "Error: All schedule fields (min, hour, dom, month, dow) are required";
+    exit;
+}
 
-file_put_contents($tempfile, '');
+// ────────────────────────────────────────────────
+// Extract the command part from the old line
+// We want to keep the same command (playaudio.sh + file)
+// ────────────────────────────────────────────────
+if (!preg_match('/^(\S+\s+\S+\s+\S+\s+\S+\s+\S+)\s+(.+)$/', $old_line, $matches)) {
+    echo "Error: Could not parse original cron line";
+    exit;
+}
 
-foreach($crons as $line){
+$old_schedule = $matches[1];           // old minute hour dom month dow
+$command      = $matches[2];           // playaudio.sh + path + filename
 
-    if(trim($line) === $old){
+// Build the NEW cron line with updated schedule but same command
+$new_line = "$min $hour $dom $month $dow $command";
 
-        file_put_contents($tempfile, $new.PHP_EOL, FILE_APPEND);
+// ────────────────────────────────────────────────
+// Read current crontab
+// ────────────────────────────────────────────────
+$output = [];
+$return_var = 0;
+exec('sudo crontab -l 2>/dev/null', $output, $return_var);
 
+if ($return_var !== 0) {
+    echo "Failed to read current crontab.";
+    exit;
+}
+
+// ────────────────────────────────────────────────
+// Replace the old line with the new one
+// ────────────────────────────────────────────────
+$new_crontab = [];
+$found = false;
+
+foreach ($output as $line) {
+    if (trim($line) === $old_line) {
+        $found = true;
+        $new_crontab[] = $new_line;
     } else {
-
-        file_put_contents($tempfile, $line.PHP_EOL, FILE_APPEND);
-
+        $new_crontab[] = $line;
     }
-
 }
 
-exec("sudo crontab $tempfile");
+if (!$found) {
+    echo "The original cron line was not found in crontab.";
+    exit;
+}
 
+// ────────────────────────────────────────────────
+// Write new crontab via temporary file (safest method)
+// ────────────────────────────────────────────────
+$tempfile = tempnam(sys_get_temp_dir(), 'cron_upd_');
+
+if (!file_put_contents($tempfile, implode(PHP_EOL, $new_crontab) . PHP_EOL)) {
+    echo "Failed to write temporary crontab file.";
+    unlink($tempfile);
+    exit;
+}
+
+exec("sudo crontab " . escapeshellarg($tempfile), $out, $ret);
 unlink($tempfile);
 
-
-echo "Updated cron for $file to $new";
+if ($ret === 0) {
+    echo "Cron job updated successfully!\n";
+    echo "New schedule: $min $hour $dom $month $dow\n";
+    echo "Command remains: $command";
+} else {
+    echo "Failed to install updated crontab.\n";
+    echo "Return code: $ret";
+}
 
 ?>
-

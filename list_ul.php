@@ -1,24 +1,17 @@
 <?php
-
 // list_ul.php
+// Lists .ul files in Asterisk announcements directory
+// CREATED BY N5AD – adapted for Allmon3
 
-// CREATED BY N5AD
-
-$SOUNDS_DIR = '/var/lib/asterisk/sounds/announcements';
+$SOUNDS_DIR = '/usr/local/share/asterisk/sounds/announcements';
 
 $files = glob("$SOUNDS_DIR/*.ul");
-
 $out = [];
 
-
 foreach ($files as $f) {
-
-    $out[] = basename($f); // only filename, not full path
-
+    $out[] = basename($f);
 }
 
-
 header('Content-Type: application/json');
-
 echo json_encode($out);
-
+?>

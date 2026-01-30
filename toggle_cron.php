@@ -1,5 +1,5 @@
 <?php
-// toggle_cron.php - Enable/Disable a cron job by commenting/uncommenting the line
+// toggle_cron.php - Enable/Disable cron job by commenting/uncommenting
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -13,9 +13,8 @@ if (empty($_POST['raw_line']) || !isset($_POST['enable'])) {
 }
 
 $raw_line = trim($_POST['raw_line']);
-$enable   = (bool)$_POST['enable'];  // true = uncomment (enable), false = comment (disable)
+$enable   = (bool)$_POST['enable'];
 
-// Read current crontab
 $output = [];
 $retval = 0;
 exec('sudo crontab -l 2>/dev/null', $output, $retval);
@@ -33,18 +32,16 @@ foreach ($output as $line) {
     if ($trimmed === $raw_line || $trimmed === "# $raw_line") {
         $found = true;
         if ($enable) {
-            // Uncomment if commented
             if (strpos($trimmed, '#') === 0) {
                 $new_line = ltrim($trimmed, '# ');
             } else {
                 $new_line = $raw_line;
             }
         } else {
-            // Comment if uncommented
             if (strpos($trimmed, '#') !== 0) {
                 $new_line = "# $raw_line";
             } else {
-                $new_line = $raw_line; // already commented
+                $new_line = $raw_line;
             }
         }
         $new_crontab[] = $new_line;
@@ -58,7 +55,6 @@ if (!$found) {
     exit;
 }
 
-// Write new crontab to temp file
 $tempfile = tempnam(sys_get_temp_dir(), 'cron');
 file_put_contents($tempfile, implode("\n", $new_crontab) . "\n");
 

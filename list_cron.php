@@ -1,13 +1,12 @@
 <?php
 /*
  * list_cron.php
- * Lists AllStar announcement cron jobs with time, file, description
- * CREATED BY N5AD
+ * Lists announcement cron jobs with time, file, description
+ * CREATED BY N5AD – adapted for Allmon3
  */
 
 header('Content-Type: application/json');
 
-// Read root crontab
 $cron = shell_exec('sudo crontab -l 2>/dev/null');
 if ($cron === null) {
     echo json_encode([]);
@@ -22,21 +21,14 @@ foreach ($lines as $line) {
     $line = trim($line);
     if ($line === "") continue;
 
-    // Capture announcement description
     if (strpos($line, '# Announcement:') === 0) {
         $last_comment = trim(str_replace('# Announcement:', '', $line));
         continue;
     }
 
-    // Match AllStar playaudio cron lines
     if (strpos($line, 'playaudio.sh') !== false) {
-
         $parts = preg_split('/\s+/', $line);
-
-        // First 5 fields are cron time
         $time = implode(" ", array_slice($parts, 0, 5));
-
-        // Last part is sound file path (no extension)
         $file = basename(end($parts));
 
         $entries[] = [
@@ -46,9 +38,9 @@ foreach ($lines as $line) {
             "raw"  => $line
         ];
 
-        // Reset comment so it only applies to one entry
         $last_comment = "";
     }
 }
 
 echo json_encode($entries);
+?>

@@ -1,11 +1,17 @@
 <?php
-// run_announcement.php
-// Plays a .ul (or other format) file immediately on the AllStar node
-// Updated by Grok to support files in /usr/local/share/asterisk/sounds/announcements/
-// and to strip any extension from the filename for consistency
-// Original by N5AD
+/**
+ * run_announcement.php
+ * 
+ * Immediately plays a .ul announcement file (or any compatible sound file)
+ * on the AllStar node using playaudio.sh
+ * 
+ * Called from:
+ *   - The "Play Now" button next to the .ul dropdown
+ *   - The "Play" button in the Cron Manager table
+ * 
+ * CREATED / ADAPTED BY N5AD for Allmon3
+ */
 
-// Only accept POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo "Method not allowed.";
@@ -17,35 +23,44 @@ if (empty($_POST['file'])) {
     exit;
 }
 
-// Sanitize input - just get the base filename, no path traversal
-$base = basename($_POST['file']);
+// ────────────────────────────────────────────────
+// Sanitize and prepare filename
+// ────────────────────────────────────────────────
+$input_file = basename($_POST['file']);
 
-// Strip any extension (e.g., if UL dropdown sends "myannounce.ul", make it "myannounce")
-$base_name = pathinfo($base, PATHINFO_FILENAME);
+// Remove any extension if it was accidentally included (e.g. "mynotice.ul" → "mynotice")
+$base_name = pathinfo($input_file, PATHINFO_FILENAME);
 
-// We will pass this relative path to playaudio.sh
-// Asterisk will look in /usr/local/share/asterisk/sounds/announcements/
-$play_path = "announcements/" . $base_name;  // no extension needed
+// AllStar playaudio.sh expects the path relative to sounds/ without extension
+// Typical location: /usr/local/share/asterisk/sounds/announcements/<base_name>
+$play_path = "announcements/" . $base_name;
 
-// Path to play script
+// ────────────────────────────────────────────────
+// Path to the play script
+// ────────────────────────────────────────────────
 $play_script = "/etc/asterisk/local/playaudio.sh";
 
-// Verify play script exists and is executable
-if (!is_executable($play_script)) {
-    echo "playaudio.sh not found or not executable at $play_script.";
+// Verify the script exists and is executable
+if (!file_exists($play_script) || !is_executable($play_script)) {
+    echo "Error: playaudio.sh not found or not executable at $play_script.";
     exit;
 }
 
-// Command to run: playaudio.sh expects filename (or subdir/filename) without extension
-$cmd = escapeshellcmd("sudo $play_script $play_path");
+// ────────────────────────────────────────────────
+// Build and execute the command with sudo
+// playaudio.sh expects:   <filename-without-extension>
+// and internally does:    asterisk -rx "rpt localplay <NODE> <filename>"
+// ────────────────────────────────────────────────
+$cmd = escapeshellcmd("sudo $play_script " . escapeshellarg($play_path));
 
-// Run the command and capture output
 exec($cmd . " 2>&1", $output, $retval);
 
 if ($retval === 0) {
     echo "Playing '$base_name' now.";
 } else {
     $error_msg = implode("\n", $output);
-    echo "Failed to play '$base_name'. Return code: $retval\nOutput: $error_msg";
+    echo "Failed to play '$base_name'.\n";
+    echo "Return code: $retval\n";
+    echo "Output:\n$error_msg";
 }
 ?>
